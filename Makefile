@@ -4,7 +4,7 @@ CAIRO_LIB = `pkg-config --libs cairo`
 SDL_INC = `sdl-config --cflags` -Ilib
 SDL_LIB = `sdl-config --libs` -Llib -lSDL_draw
 
-CAIRO = dragon_cairo b
+CAIRO = dragon_cairo koch_cairo
 SDL = dragon_sdl
 
 all: cairo sdl
