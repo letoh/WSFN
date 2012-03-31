@@ -60,7 +60,7 @@ void move(int _x, int _y, int x, int y)
 void finish(void)
 {
 	if(!surface || !cr) return;
-	cairo_surface_write_to_png(surface, "a.png");
+	cairo_surface_write_to_png(surface, __FILE__ ".png");
 	cairo_destroy(cr);
 	cairo_surface_destroy(surface);
 }
