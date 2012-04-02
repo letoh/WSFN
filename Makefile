@@ -10,10 +10,10 @@ SDL_INC = `sdl-config --cflags` -Ilib
 SDL_LIB = `sdl-config --libs` -Llib -lSDL_draw
 
 CAIRO = 
-SDL = 
+SDL = shell_sdl
 WSFN = libwsfn.a
 
-all: shell
+all: $(WSFN) shell sdl
 
 %: %.c
 	$(CC) -o $@ $< $(CFLAGS) $(LDFLAGS)
