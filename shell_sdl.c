@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <SDL/SDL.h>
 #include <SDL/SDL_thread.h>
 #include <SDL/SDL_mutex.h>
@@ -18,7 +19,7 @@
 #define INTERVAL 3
 
 int done;
-SDL_Surface* screen;
+SDL_Surface *screen;
 jmp_buf env;
 
 void delay(void)
@@ -55,15 +56,36 @@ static void move(struct WSFN *vm)
 	delay();
 }
 
-int draw_func(void *arg)
+static char *input(const char *prompt, char *buf, int size, FILE *in)
 {
-	if(!setjmp(env)) eval((struct WSFN *)arg, "DpT(-pRq+)F DqT(-pRRRq+)F Z+++++++p");
+	char *p;
+	printf(prompt);
+	p = fgets(buf, size, in);
+	if(!p || feof(in)) return NULL;
+	if( (p = strchr(buf, '\n')) ) *p = '\0';
+	return buf;
+}
+
+int console_func(void *arg)
+{
+	char buf[128];
+	while(!done)
+	{
+		if(!input(">> ", buf, sizeof(buf), stdin) )
+		{
+			done = 1;
+			break;
+		}
+		if(!setjmp(env))
+			eval((struct WSFN *)arg, buf);
+		SDL_Delay(1);
+	}
 	return 0;
 }
 
 SDL_Surface * InitCanvas(void)
 {
-	if(0 != SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) ||
+	if(0 != SDL_Init(SDL_INIT_VIDEO) ||
 		NULL == (screen = SDL_SetVideoMode(WIDTH, HEIGHT, 0, SDL_HWSURFACE | SDL_DOUBLEBUF)))
 		return NULL;
 	SDL_WM_SetCaption("WSFN (SDL)", 0);
@@ -74,14 +96,14 @@ SDL_Surface * InitCanvas(void)
 
 int main(int argc, char *argv[])
 {
-	SDL_Thread *drawer;
+	SDL_Thread *console;
 	SDL_Event event;
 	struct WSFN wsfn = {0};
 
 	setup(&wsfn, init, move);
 
 	if(NULL == InitCanvas() ) return 1;
-	drawer = SDL_CreateThread(draw_func, (void *)&wsfn);
+	console = SDL_CreateThread(console_func, (void *)&wsfn);
 	while (!done)
 	{
 		if (SDL_PollEvent(&event))
@@ -90,11 +112,15 @@ int main(int argc, char *argv[])
 				(event.type == SDL_KEYDOWN &&
 				 (event.key.keysym.sym == SDLK_ESCAPE ||
 				  event.key.keysym.sym == SDLK_q)) )
+			{
+				SDL_KillThread(console);
+				console = NULL;
 				done = 1;
+			}
 		}
 		SDL_Delay(1);
 	}
-	SDL_WaitThread(drawer, NULL);
+	if(console) SDL_WaitThread(console, NULL);
 	return 0;
 }
 
